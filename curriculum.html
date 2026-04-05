@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive CV - Nathaniel Camacho</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class', // Habilita el modo oscuro mediante la clase 'dark'
+  theme: {
+    extend: {
+      colors: {
+        warmbg: '#FAF8F5',
+        warmtext: '#4A4A4A',
+        accent: '#5E8B7E',
+        accentlight: '#A7C4BC',
+        cardbg: '#FFFFFF',
+        borderwarm: '#E2DCD0'
+      },
+      fontFamily: {
+        sans: ['Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+
+<!-- Script rápido para evitar el "parpadeo" de luz si el modo oscuro está guardado -->
+<script>
+  if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+</script>
+
+<style>
+.chart-container {
+position: relative;
+width: 100%;
+max-width: 700px;
+margin-left: auto;
+margin-right: auto;
+height: 350px;
+max-height: 400px;
+}
+@media (min-width: 768px) {
+.chart-container {
+height: 400px;
+}
+}
+.tab-active {
+border-bottom-width: 4px;
+border-color: #5E8B7E;
+color: #5E8B7E;
+font-weight: bold;
+}
+.exp-card-active {
+border-left-width: 4px;
+border-color: #5E8B7E;
+}
+
+/* Animaciones */
+.fade-in {
+animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(5px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilos de barra de desplazamiento (Adaptados al modo oscuro) */
+::-webkit-scrollbar {
+width: 8px;
+}
+::-webkit-scrollbar-track {
+background: #FAF8F5; 
+}
+.dark ::-webkit-scrollbar-track {
+background: #111827; /* gray-900 */
+}
+::-webkit-scrollbar-thumb {
+background: #A7C4BC; 
+border-radius: 4px;
+}
+.dark ::-webkit-scrollbar-thumb {
+background: #4B5563; /* gray-600 */
+}
+::-webkit-scrollbar-thumb:hover {
+background: #5E8B7E; 
+}
+
+/* --- ESTILOS ESPECÍFICOS PARA IMPRESIÓN / PDF --- */
+@media print {
+  @page { margin: 1.5cm; }
+  html, body { 
+    background-color: #FFFFFF !important; 
+    color: #000000 !important; 
+    display: block !important; 
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+  
+  aside { 
+    width: 100% !important; 
+    border-right: none !important; 
+    border-bottom: 2px solid #E2DCD0 !important; 
+    padding: 0 0 20px 0 !important; 
+    box-shadow: none !important; 
+    position: static !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    gap: 30px !important; 
+    background-color: transparent !important;
+  }
+  
+  aside .print-photo-container {
+    flex-shrink: 0 !important;
+  }
+  aside img { 
+    margin: 0 !important;
+    width: 160px !important; 
+    height: 160px !important;
+    border-width: 3px !important;
+  }
+  
+  aside .print-info-container {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-grow: 1 !important;
+  }
+  
+  aside h1 { 
+    text-align: left !important; 
+    font-size: 1.5rem !important; 
+    margin-bottom: 0.25rem !important;
+    color: #5E8B7E !important;
+  }
+  aside h2 { 
+    text-align: left !important; 
+    margin-bottom: 0.75rem !important;
+    color: #4A4A4A !important;
+  }
+  
+  aside .space-y-4 { 
+    display: grid !important; 
+    grid-template-columns: 1fr 1fr !important; 
+    gap: 8px 20px !important; 
+    margin-top: 0 !important;
+    color: #4A4A4A !important;
+  }
+  aside .space-y-4 p { margin: 0 !important; font-size: 0.85rem !important; }
+  
+  main { 
+    width: 100% !important; 
+    height: auto !important; 
+    overflow: visible !important; 
+    padding: 20px 0 !important; 
+    display: block !important; 
+  }
+  
+  nav, #skill-filters, .print-hidden, ::-webkit-scrollbar { display: none !important; }
+  
+  .bg-cardbg, .dark\:bg-gray-800, .bg-warmbg, .dark\:bg-gray-900 { 
+    background-color: transparent !important; 
+    box-shadow: none !important; 
+    border: none !important; 
+    padding: 0 !important; 
+    margin-bottom: 30px !important; 
+    color: #000 !important;
+  }
+  
+  section { page-break-inside: avoid; break-inside: avoid; }
+  
+  #view-certificados { 
+    page-break-before: always; 
+    padding-top: 20px !important;
+  }
+  
+  .chart-container { height: 250px !important; }
+}
+</style>
+</head>
+<body class="antialiased min-h-screen flex flex-col md:flex-row print:block bg-warmbg dark:bg-gray-900 text-warmtext dark:text-gray-200 transition-colors duration-300">
+
+<aside class="w-full md:w-1/3 lg:w-1/4 bg-cardbg dark:bg-gray-800 border-r border-borderwarm dark:border-gray-700 p-8 flex flex-col justify-between shadow-sm z-10 relative transition-colors duration-300">
+<div class="print:flex print:flex-row print:gap-8 print:w-full print:items-start">
+  
+  <div class="print-photo-container">
+    <img src="FOTOFONDOBLANCO.jpeg" alt="Foto de Nathaniel Camacho" class="w-40 h-40 rounded-full mx-auto mb-4 object-cover shadow-md border-2 border-accent print:mx-0">
+  </div>
+
+  <div class="print-info-container">
+    <div>
+      <h1 class="text-2xl font-bold text-center text-accent mb-1 print:text-left">Nathaniel Jesus Camacho Ducallin</h1>
+      <h2 class="text-sm text-center text-warmtext dark:text-gray-400 mb-6 font-semibold uppercase tracking-wider print:text-left print:mb-3 transition-colors duration-300">Estudiante Licenciatura en Informática | Técnico Medio en Mecánica de Mantenimiento</h2>
+    </div>
+
+    <div class="space-y-4 text-sm text-warmtext dark:text-gray-300 transition-colors duration-300">
+      <p class="flex items-center"><span class="text-xl mr-3 text-accent print:text-base">&#128179;</span> C.I.: 28.401.229</p>
+      <p class="flex items-center"><span class="text-xl mr-3 text-accent print:text-base">&#128197;</span> Nacimiento: 10/07/2001</p>
+      <p class="flex items-center"><span class="text-xl mr-3 text-accent print:text-base">&#128205;</span> Cumaná, Sucre 6101</p>
+      <p class="flex items-center"><span class="text-xl mr-3 text-accent print:text-base">&#128241;</span> +58 412 8045033</p>
+      <p class="flex items-center col-span-2 print:col-span-1"><span class="text-xl mr-3 text-accent print:text-base">&#128231;</span> nathanieljesuscd@gmail.com</p>
+    </div>
+  </div>
+</div>
+
+<nav class="mt-6 flex flex-col gap-2 border-t border-borderwarm dark:border-gray-700 pt-6 print-hidden transition-colors duration-300">
+<button id="btn-cv" class="nav-btn text-left px-4 py-2 rounded bg-accent text-white font-bold transition-colors w-full">📄 Curriculum Vitae</button>
+<button id="btn-cert" class="nav-btn text-left px-4 py-2 rounded text-warmtext dark:text-gray-300 hover:bg-borderwarm dark:hover:bg-gray-700 transition-colors w-full">🎓 Cursos y Certificados</button>
+
+<!-- Botón de Modo Oscuro -->
+<button id="btn-theme" class="mt-2 nav-btn text-left px-4 py-2 rounded border border-transparent dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-warmtext dark:text-gray-300 hover:bg-borderwarm dark:hover:bg-gray-700 transition-colors w-full flex items-center justify-center gap-2 shadow-sm">
+  <span id="theme-icon">🌙</span> <span id="theme-text">Modo Oscuro</span>
+</button>
+
+<!-- Botón para Imprimir -->
+<button onclick="window.print()" class="mt-2 nav-btn text-left px-4 py-2 rounded border border-accent text-accent font-bold hover:bg-accent hover:text-white transition-colors w-full flex items-center justify-center gap-2 shadow-sm">
+<span>🖨️</span> Imprimir / PDF
+</button>
+</nav>
+
+<div class="mt-8 pt-6 border-t border-borderwarm dark:border-gray-700 text-xs text-center text-gray-500 dark:text-gray-400 print-hidden transition-colors duration-300">
+<p>Curriculum Vitae Interactivo</p>
+<p>Actualizado: 2026</p>
+</div>
+</aside>
+
+<main class="w-full md:w-2/3 lg:w-3/4 p-6 md:p-10 overflow-y-auto h-screen scroll-smooth print:overflow-visible">
+
+<!-- VISTA CV -->
+<div id="view-cv" class="view-section">
+<section id="perfil" class="mb-12 bg-cardbg dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-borderwarm dark:border-gray-700 fade-in transition-colors duration-300">
+<h3 class="text-2xl font-bold mb-4 text-accent flex items-center"><span class="mr-2">&#128100;</span> Perfil Profesional</h3>
+<p class="text-sm mb-4 leading-relaxed text-gray-700 dark:text-gray-300 print-hidden transition-colors duration-300">
+Esta sección resume mi propuesta de valor. Como profesional técnico, ofrezco una combinación de experiencia práctica en telecomunicaciones y soporte IT, respaldada por estudios universitarios en informática.
+</p>
+<p class="leading-relaxed text-gray-800 dark:text-gray-200 transition-colors duration-300">
+Profesional técnico con sólida experiencia en áreas de telecomunicaciones, monitoreo de redes, y soporte técnico, complementado con un amplio recorrido en roles administrativos, operativos y de control de calidad. Destacado por la adaptabilidad, resolución de problemas tecnológicos (redes FTTH, servidores, programación básica) y habilidades de coordinación de equipos y atención al público.
+</p>
+</section>
+
+<!-- Sección de Educación -->
+<section id="educacion" class="mb-12 bg-cardbg dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-borderwarm dark:border-gray-700 fade-in transition-colors duration-300">
+<h3 class="text-2xl font-bold mb-4 text-accent flex items-center"><span class="mr-2">&#127891;</span> Educación y Formación</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="p-5 border border-borderwarm dark:border-gray-700 rounded-lg bg-warmbg dark:bg-gray-900 hover:shadow-md transition-all duration-300">
+<div class="text-3xl mb-3 print-hidden">&#128187;</div>
+<h4 class="font-bold text-lg text-accent">Licenciatura en Informática</h4>
+<p class="text-sm font-semibold mb-2">Cursando 8vo Semestre</p>
+<p class="text-sm text-gray-700 dark:text-gray-300">Universidad de Oriente (UDO)<br>Cumaná, Sucre</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-2 uppercase tracking-wide">Actualidad</p>
+</div>
+<div class="p-5 border border-borderwarm dark:border-gray-700 rounded-lg bg-warmbg dark:bg-gray-900 hover:shadow-md transition-all duration-300">
+<div class="text-3xl mb-3 print-hidden">&#128295;</div>
+<h4 class="font-bold text-lg text-accent">Técnico Medio</h4>
+<p class="text-sm font-semibold mb-2">Mecánica de Mantenimiento</p>
+<p class="text-sm text-gray-700 dark:text-gray-300">E.T.I. Emilio Tebar Carrasco<br>Cumaná, Sucre</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-2 uppercase tracking-wide">Sept 2014 - Jul 2018</p>
+</div>
+</div>
+</section>
+
+<!-- Habilidades ocultas al imprimir -->
+<section id="habilidades" class="mb-12 bg-cardbg dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-borderwarm dark:border-gray-700 fade-in print-hidden transition-colors duration-300">
+<h3 class="text-2xl font-bold mb-4 text-accent flex items-center"><span class="mr-2">&#9881;</span> Análisis de Habilidades</h3>
+<div class="flex flex-wrap gap-2 mb-6" id="skill-filters">
+<button class="px-4 py-2 rounded-full bg-accent text-white text-sm font-semibold transition-colors filter-btn" data-category="all">Todas</button>
+<button class="px-4 py-2 rounded-full bg-borderwarm dark:bg-gray-700 text-warmtext dark:text-gray-300 text-sm font-semibold hover:bg-accentlight hover:text-white transition-colors filter-btn" data-category="redes">Redes & Telecom</button>
+<button class="px-4 py-2 rounded-full bg-borderwarm dark:bg-gray-700 text-warmtext dark:text-gray-300 text-sm font-semibold hover:bg-accentlight hover:text-white transition-colors filter-btn" data-category="sistemas">Sistemas & Servidores</button>
+<button class="px-4 py-2 rounded-full bg-borderwarm dark:bg-gray-700 text-warmtext dark:text-gray-300 text-sm font-semibold hover:bg-accentlight hover:text-white transition-colors filter-btn" data-category="desarrollo">Desarrollo & Software</button>
+</div>
+
+<!-- Gráfica Interactiva -->
+<div class="chart-container">
+<canvas id="skillsChart"></canvas>
+</div>
+</section>
+
+<section id="experiencia" class="mb-12 bg-cardbg dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-borderwarm dark:border-gray-700 fade-in transition-colors duration-300">
+<h3 class="text-2xl font-bold mb-4 text-accent flex items-center"><span class="mr-2">&#128188;</span> Trayectoria Profesional</h3>
+<p class="text-sm mb-6 leading-relaxed text-gray-700 dark:text-gray-300 print-hidden transition-colors duration-300">
+Seleccione una empresa de la lista interactiva a la izquierda para revelar los detalles específicos, roles y responsabilidades que asumí en cada posición.
+</p>
+
+<!-- Vista Interactiva (Oculta en impresión) -->
+<div class="flex flex-col lg:flex-row gap-6 print-hidden">
+<div class="w-full lg:w-1/3 flex flex-col gap-2" id="experience-list">
+</div>
+<div class="w-full lg:w-2/3 bg-warmbg dark:bg-gray-900 p-6 rounded-lg border border-borderwarm dark:border-gray-700 min-h-[250px] transition-colors duration-300" id="experience-detail">
+<div class="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+Seleccione una experiencia laboral para ver los detalles.
+</div>
+</div>
+</div>
+
+<!-- Vista de Impresión (Visible SOLO en impresión) -->
+<div id="print-experience-list" class="hidden print:flex flex-col gap-6">
+<!-- Se poblará por JavaScript para mostrar todas las experiencias seguidas -->
+</div>
+
+</section>
+</div>
+
+<!-- VISTA CERTIFICADOS -->
+<div id="view-certificados" class="view-section hidden">
+<section class="mb-12 bg-cardbg dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-borderwarm dark:border-gray-700 fade-in transition-colors duration-300">
+<h3 class="text-2xl font-bold mb-4 text-accent flex items-center"><span class="mr-2">&#127942;</span> Mis Cursos y Certificados</h3>
+<p class="text-sm mb-6 leading-relaxed text-gray-700 dark:text-gray-300 print-hidden transition-colors duration-300">
+Un registro de mi aprendizaje continuo, certificaciones obtenidas y áreas de especialización complementarias en tecnología y redes.
+</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="certificados-list">
+<!-- Los certificados se cargarán aquí mediante JavaScript -->
+</div>
+</section>
+</div>
+
+</main>
+
+<script>
+const rawSkills = [
+{ name: 'Redes FTTH', level: 90, category: 'redes' },
+{ name: 'Smart OLT / SAEPLUS', level: 85, category: 'redes' },
+{ name: 'Subnetting & VLANs', level: 88, category: 'redes' },
+{ name: 'OTDR', level: 80, category: 'redes' },
+{ name: 'Hardware Servidores', level: 85, category: 'sistemas' },
+{ name: 'Ubuntu Server', level: 80, category: 'sistemas' },
+{ name: 'Proxmox & VirtualBox', level: 85, category: 'sistemas' },
+{ name: 'Mantenimiento PC', level: 95, category: 'sistemas' },
+{ name: 'Zabbix', level: 82, category: 'sistemas' },
+{ name: 'CLI', level: 88, category: 'sistemas' },
+{ name: 'Metodologías BlueWatch', level: 75, category: 'desarrollo' },
+{ name: 'UI/UX Design', level: 70, category: 'desarrollo' },
+{ name: 'Python Básico', level: 65, category: 'desarrollo' },
+{ name: 'Editores Texto', level: 90, category: 'desarrollo' }
+];
+
+const experiences = [
+{
+id: 'e1',
+company: 'MULTITEL-CUMANA',
+role: 'Monitoreo Nocturno',
+period: 'Octubre 2024 – Marzo 2026',
+boss: 'Cesar Augusto Flores Arrieta',
+details: 'Monitoreo activo de la red, seguimiento y control de usuarios, y manejo de sistemas de información. Coordinación de equipos de campo, elaboración de reportes y actualización constante del estado de la red.',
+icon: '&#128225;'
+},
+{
+id: 'e2',
+company: 'C.F.P. Renaciendo Juntos',
+role: 'Apoyo Distribuciones / Bodega',
+period: 'Abril 2022 – Febrero 2023',
+boss: 'Enmanuel Mora (Coord. Sucre)',
+details: 'Apoyo y asistencia en la entrega de canastas de comida escolar del Programa Mundial de Alimentos (WFP) de las Naciones Unidas. Recepción, verificación y almacenamiento de alimentos secos en bodega.',
+icon: '&#128230;'
+},
+{
+id: 'e3',
+company: 'CASETEL',
+role: 'Asistente de Impresiones',
+period: 'Abril 2021 – Mayo 2022',
+boss: 'Raúl Pino',
+details: 'Atención directa al público, manejo y mantenimiento de equipos de oficina. Asistencia general en diversas áreas operativas de la empresa.',
+icon: '&#128424;'
+},
+{
+id: 'e4',
+company: 'Sucre Potencia',
+role: 'Asistente Control Calidad / Plagas',
+period: 'Abril 2020 – Abril 2021',
+boss: 'Viclexis Martínez e Ivo Fuentes',
+details: 'Recuperación, recepción y verificación del estado de los alimentos. Manejo y aplicación de productos químicos para el control de plagas en las instalaciones.',
+icon: '&#129520;'
+},
+{
+id: 'e5',
+company: 'Metal Mecánica HN',
+role: 'Ayudante de Maquinista / Tornero',
+period: 'Abril 2019 – Julio 2019',
+boss: 'Nelson Navarro',
+details: 'Asistencia directa a los maquinistas principales y fabricación de diversas piezas metalmecánicas.',
+icon: '&#9881;'
+},
+{
+id: 'e6',
+company: 'Roca TV',
+role: 'Encargado / Coordinador',
+period: 'Mayo 2017 – Abril 2019',
+boss: 'Elías José Ocque Ortiz',
+details: 'Editor encargado del contenido audiovisual, camarógrafo principal y coordinador de las programaciones televisadas del canal.',
+icon: '&#128250;'
+}
+];
+
+const certificados = [
+{ titulo: 'Seguridad Industrial y Ambiente de Trabajo', institucion: 'CFS Cumaná (20 horas)', anio: 'Sep 2021', icono: '🏭' },
+{ titulo: 'Básico de Supervisión', institucion: 'CFS Cumaná (20 horas)', anio: 'Sep 2021', icono: '📋' },
+{ titulo: 'Seguridad en Espacios Confinados', institucion: 'CFS Cumaná (20 horas)', anio: 'Ago - Sep 2021', icono: '🚧' },
+{ titulo: 'Seguridad Industrial', institucion: 'CFS Cumaná (40 horas)', anio: 'Feb 2020', icono: '🛡️' }
+];
+
+let skillsChartInstance = null;
+
+function renderChart(filterCategory) {
+const ctx = document.getElementById('skillsChart').getContext('2d');
+const filteredData = filterCategory === 'all' 
+? rawSkills 
+: rawSkills.filter(s => s.category === filterCategory);
+
+const labels = filteredData.map(s => s.name);
+const data = filteredData.map(s => s.level);
+const colors = filteredData.map(s => {
+if(s.category === 'redes') return 'rgba(94, 139, 126, 0.8)';
+if(s.category === 'sistemas') return 'rgba(167, 196, 188, 0.8)';
+return 'rgba(210, 196, 180, 0.8)';
+});
+
+// Detectar el modo actual para ajustar colores de la gráfica
+const isDark = document.documentElement.classList.contains('dark');
+const gridColor = isDark ? '#374151' : '#E2DCD0';
+const textColor = isDark ? '#D1D5DB' : '#666666';
+
+if (skillsChartInstance) {
+skillsChartInstance.destroy();
+}
+
+skillsChartInstance = new Chart(ctx, {
+type: 'bar',
+data: {
+labels: labels,
+datasets: [{
+label: 'Nivel Estimado (%)',
+data: data,
+backgroundColor: colors,
+borderRadius: 4
+}]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+indexAxis: 'y',
+animation: {
+  duration: window.matchMedia('print').matches ? 0 : 1000
+},
+scales: {
+x: {
+beginAtZero: true,
+max: 100,
+grid: { color: gridColor },
+ticks: { color: textColor }
+},
+y: {
+grid: { display: false },
+ticks: {
+color: textColor,
+callback: function(value) {
+let label = this.getLabelForValue(value);
+return label.length > 16 ? label.substr(0, 16) + '...' : label;
+}
+}
+}
+},
+plugins: {
+legend: { display: false },
+tooltip: {
+callbacks: {
+label: function(context) {
+return ' Nivel: ' + context.parsed.x + '%';
+}
+}
+}
+}
+}
+});
+}
+
+function handleFilterClick(event) {
+const buttons = document.querySelectorAll('.filter-btn');
+buttons.forEach(btn => {
+btn.classList.remove('bg-accent', 'text-white');
+btn.classList.add('bg-borderwarm', 'dark:bg-gray-700', 'text-warmtext', 'dark:text-gray-300');
+});
+
+const clickedBtn = event.target;
+clickedBtn.classList.remove('bg-borderwarm', 'dark:bg-gray-700', 'text-warmtext', 'dark:text-gray-300');
+clickedBtn.classList.add('bg-accent', 'text-white');
+
+renderChart(clickedBtn.dataset.category);
+}
+
+function renderExperienceList() {
+const listContainer = document.getElementById('experience-list');
+const printContainer = document.getElementById('print-experience-list');
+listContainer.innerHTML = '';
+printContainer.innerHTML = '';
+
+experiences.forEach((exp, index) => {
+// Pantalla
+const div = document.createElement('div');
+div.className = `p-3 cursor-pointer rounded border border-borderwarm dark:border-gray-700 hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 ${index === 0 ? 'exp-card-active bg-white dark:bg-gray-700' : 'bg-warmbg dark:bg-gray-900'}`;
+div.innerHTML = `
+<div class="font-bold text-accent text-sm truncate">${exp.company}</div>
+<div class="text-xs text-gray-500 dark:text-gray-400">${exp.period.split(' – ')[0]}</div>
+`;
+div.addEventListener('click', () => {
+document.querySelectorAll('#experience-list > div').forEach(el => {
+el.classList.remove('exp-card-active', 'bg-white', 'dark:bg-gray-700');
+el.classList.add('bg-warmbg', 'dark:bg-gray-900');
+});
+div.classList.remove('bg-warmbg', 'dark:bg-gray-900');
+div.classList.add('exp-card-active', 'bg-white', 'dark:bg-gray-700');
+renderExperienceDetail(exp);
+});
+listContainer.appendChild(div);
+
+// PDF
+printContainer.innerHTML += `
+<div class="mb-2 pb-4 border-b border-borderwarm dark:border-gray-700">
+  <div class="flex justify-between items-baseline mb-1">
+    <h4 class="text-lg font-bold text-accent">${exp.company} - ${exp.role}</h4>
+    <span class="text-sm font-bold text-gray-500 dark:text-gray-400">${exp.period}</span>
+  </div>
+  <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-300">${exp.details}</p>
+  ${exp.boss !== 'N/A' ? `<p class="text-xs italic mt-1 text-gray-600 dark:text-gray-500">Jefe Inmediato: ${exp.boss}</p>` : ''}
+</div>
+`;
+});
+
+renderExperienceDetail(experiences[0]);
+}
+
+function renderExperienceDetail(exp) {
+const detailContainer = document.getElementById('experience-detail');
+detailContainer.innerHTML = `
+<div class="fade-in h-full flex flex-col">
+<div class="flex items-center mb-4 border-b border-borderwarm dark:border-gray-700 pb-4">
+<span class="text-4xl mr-4">${exp.icon}</span>
+<div>
+<h4 class="text-xl font-bold text-accent">${exp.company}</h4>
+<p class="text-md font-semibold text-gray-800 dark:text-gray-200">${exp.role}</p>
+</div>
+</div>
+<div class="mb-4">
+<span class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold block mb-1">Período</span>
+<p class="text-sm bg-white dark:bg-gray-800 inline-block px-2 py-1 rounded border border-borderwarm dark:border-gray-700 text-gray-800 dark:text-gray-300">${exp.period}</p>
+</div>
+<div class="mb-4 flex-grow">
+<span class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold block mb-1">Funciones Clave</span>
+<p class="text-sm leading-relaxed text-gray-800 dark:text-gray-300">${exp.details}</p>
+</div>
+<div class="mt-auto pt-4 border-t border-borderwarm dark:border-gray-700">
+<span class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold block mb-1">Jefe Inmediato</span>
+<p class="text-sm italic text-gray-800 dark:text-gray-300">${exp.boss}</p>
+</div>
+</div>
+`;
+}
+
+function renderCertificados() {
+const container = document.getElementById('certificados-list');
+container.innerHTML = '';
+certificados.forEach(cert => {
+container.innerHTML += `
+<div class="p-5 border border-borderwarm dark:border-gray-700 rounded-lg bg-warmbg dark:bg-gray-900 hover:shadow-md transition-shadow flex items-start gap-4">
+<div class="text-4xl print-hidden">${cert.icono}</div>
+<div>
+<h4 class="font-bold text-md text-accent">${cert.titulo}</h4>
+<p class="text-sm text-gray-600 dark:text-gray-400">${cert.institucion}</p>
+<span class="text-xs font-bold text-accentlight mt-2 inline-block">${cert.anio}</span>
+</div>
+</div>
+`;
+});
+}
+
+function setupNavigation() {
+const btnCv = document.getElementById('btn-cv');
+const btnCert = document.getElementById('btn-cert');
+const viewCv = document.getElementById('view-cv');
+const viewCert = document.getElementById('view-certificados');
+
+btnCv.addEventListener('click', () => {
+viewCv.classList.remove('hidden');
+viewCert.classList.add('hidden');
+
+btnCv.classList.remove('text-warmtext', 'dark:text-gray-300', 'hover:bg-borderwarm', 'dark:hover:bg-gray-700');
+btnCv.classList.add('bg-accent', 'text-white', 'font-bold');
+
+btnCert.classList.remove('bg-accent', 'text-white', 'font-bold');
+btnCert.classList.add('text-warmtext', 'dark:text-gray-300', 'hover:bg-borderwarm', 'dark:hover:bg-gray-700');
+});
+
+btnCert.addEventListener('click', () => {
+viewCert.classList.remove('hidden');
+viewCv.classList.add('hidden');
+
+btnCert.classList.remove('text-warmtext', 'dark:text-gray-300', 'hover:bg-borderwarm', 'dark:hover:bg-gray-700');
+btnCert.classList.add('bg-accent', 'text-white', 'font-bold');
+
+btnCv.classList.remove('bg-accent', 'text-white', 'font-bold');
+btnCv.classList.add('text-warmtext', 'dark:text-gray-300', 'hover:bg-borderwarm', 'dark:hover:bg-gray-700');
+});
+}
+
+// Configuración del Modo Oscuro
+function setupThemeToggle() {
+  const themeBtn = document.getElementById('btn-theme');
+  
+  // Actualizar UI del botón dependiendo del estado
+  const updateThemeUI = (isDark) => {
+    const icon = document.getElementById('theme-icon');
+    const text = document.getElementById('theme-text');
+    icon.innerHTML = isDark ? '☀️' : '🌙';
+    text.innerText = isDark ? 'Modo Claro' : 'Modo Oscuro';
+    
+    // Redibujar gráfica con los colores correctos si está visible
+    const activeCategory = document.querySelector('.filter-btn.bg-accent')?.dataset.category || 'all';
+    renderChart(activeCategory);
+  };
+
+  // Sincronizar UI al cargar la página
+  const isDark = document.documentElement.classList.contains('dark');
+  updateThemeUI(isDark);
+
+  themeBtn.addEventListener('click', () => {
+    document.documentElement.classList.toggle('dark');
+    const isCurrentlyDark = document.documentElement.classList.contains('dark');
+    
+    // Guardar preferencia
+    localStorage.setItem('theme', isCurrentlyDark ? 'dark' : 'light');
+    updateThemeUI(isCurrentlyDark);
+  });
+}
+
+// Eventos críticos para forzar la visibilidad antes de que el navegador calcule la impresión
+window.addEventListener('beforeprint', () => {
+  document.getElementById('view-cv').classList.remove('hidden');
+  document.getElementById('view-certificados').classList.remove('hidden');
+});
+
+// Restaurar a la vista actual después de imprimir
+window.addEventListener('afterprint', () => {
+  const isCvActive = document.getElementById('btn-cv').classList.contains('bg-accent');
+  if (isCvActive) {
+      document.getElementById('view-certificados').classList.add('hidden');
+  } else {
+      document.getElementById('view-cv').classList.add('hidden');
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+renderChart('all');
+document.querySelectorAll('.filter-btn').forEach(btn => {
+btn.addEventListener('click', handleFilterClick);
+});
+renderExperienceList();
+renderCertificados();
+setupNavigation();
+setupThemeToggle();
+});
+</script>
+</body>
+</html>
